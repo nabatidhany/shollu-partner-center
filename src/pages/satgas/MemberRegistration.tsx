@@ -39,6 +39,7 @@ const MemberRegistration: React.FC = () => {
     setCardNumber('');
     setFormData({ name: '', phone: '', gender: 'L', birthDate: '' });
   };
+
   return (
     <div className="space-y-6">
       <div>

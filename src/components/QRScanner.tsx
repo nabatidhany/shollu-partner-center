@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { X, Camera, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, AlertCircle } from 'lucide-react';
+import { Scanner } from '@yudiel/react-qr-scanner';
 
 interface QRScannerProps {
   onScan: (data: string) => void;
@@ -10,66 +11,16 @@ interface QRScannerProps {
 
 const QRScanner: React.FC<QRScannerProps> = ({ onScan, onClose, title, subtitle }) => {
   const [error, setError] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
 
-  useEffect(() => {
-    startCamera();
-    return () => {
-      stopCamera();
-    };
-  }, []);
-
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
-      });
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        setIsLoading(false);
-        
-        // Start scanning after video loads
-        videoRef.current.onloadedmetadata = () => {
-          scanQRCode();
-        };
-      }
-    } catch (err) {
-      setError('Tidak dapat mengakses kamera. Pastikan izin kamera sudah diberikan.');
-      setIsLoading(false);
+  const handleScan = (result: any) => {
+    if (result && result[0]?.rawValue) {
+      onScan(result[0].rawValue);
     }
   };
 
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-  };
-
-  const scanQRCode = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-
-    if (!context) return;
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // Mock QR detection - in real implementation, use a QR detection library
-    // For demo purposes, we'll simulate successful scan after 3 seconds
-    setTimeout(() => {
-      const mockQRData = 'KRT-' + Math.random().toString(36).substr(2, 6).toUpperCase();
-      onScan(mockQRData);
-    }, 3000);
+  const handleError = (error: any) => {
+    console.error('QR Scanner Error:', error);
+    setError('Tidak dapat mengakses kamera. Pastikan izin kamera sudah diberikan.');
   };
 
   const handleManualInput = () => {
@@ -109,24 +60,23 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan, onClose, title, subtitle 
             </div>
           ) : (
             <div className="relative">
-              {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
-                  <div className="text-center">
-                    <Camera className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-600">Memuat kamera...</p>
-                  </div>
-                </div>
-              )}
-              
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                className="w-full h-64 bg-black rounded-lg object-cover"
+              <Scanner
+                onScan={handleScan}
+                onError={handleError}
+                constraints={{
+                  facingMode: 'environment'
+                }}
+                styles={{
+                  container: {
+                    width: '100%',
+                    height: '300px',
+                    borderRadius: '8px',
+                    overflow: 'hidden'
+                  }
+                }}
               />
               
-              <canvas ref={canvasRef} className="hidden" />
-              
+              {/* Scanning overlay */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="w-48 h-48 border-2 border-white rounded-lg shadow-lg">
                   <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-blue-500 rounded-tl-lg"></div>

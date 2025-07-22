@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { QrCode, Scan, Users, CheckCircle, Calendar, AlertCircle } from 'lucide-react';
+import { QrCode, Scan, Users, CheckCircle, AlertCircle } from 'lucide-react';
 import QRScanner from '../../components/QRScanner';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
