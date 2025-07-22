@@ -1,106 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, Download, Clock, CheckCircle, Truck, Eye, Printer } from 'lucide-react';
-
-interface CardPrintRequest {
-  id: string;
-  satgasId: string;
-  satgasName: string;
-  satgasEmail: string;
-  masjidName: string;
-  quantity: number;
-  requestDate: string;
-  status: 'pending' | 'approved' | 'printing' | 'shipped' | 'completed';
-  notes?: string;
-  estimatedDelivery?: string;
-}
+import { getCardRequests, updateCardRequestStatus } from '../../api/auth';
 
 const CardPrintRequests: React.FC = () => {
-  const [requests, setRequests] = useState<CardPrintRequest[]>([
-    {
-      id: '1',
-      satgasId: '2',
-      satgasName: 'Ahmad Wijaya',
-      satgasEmail: 'ahmad.wijaya@email.com',
-      masjidName: 'Masjid Al-Ikhlas',
-      quantity: 50,
-      requestDate: '2024-01-22',
-      status: 'pending',
-      notes: 'Request kartu untuk anggota baru'
-    },
-    {
-      id: '2',
-      satgasId: '3',
-      satgasName: 'Siti Rahmah',
-      satgasEmail: 'siti.rahmah@email.com',
-      masjidName: 'Masjid An-Nur',
-      quantity: 25,
-      requestDate: '2024-01-20',
-      status: 'approved',
-      notes: 'Kartu tambahan untuk jamaah baru'
-    },
-    {
-      id: '3',
-      satgasId: '4',
-      satgasName: 'Budi Santoso',
-      satgasEmail: 'budi.santoso@email.com',
-      masjidName: 'Masjid At-Taqwa',
-      quantity: 75,
-      requestDate: '2024-01-18',
-      status: 'printing',
-      notes: 'Request kartu untuk program dakwah',
-      estimatedDelivery: '2024-01-28'
-    },
-    {
-      id: '4',
-      satgasId: '5',
-      satgasName: 'Fatimah Zahra',
-      satgasEmail: 'fatimah.zahra@email.com',
-      masjidName: 'Masjid Ar-Rahman',
-      quantity: 30,
-      requestDate: '2024-01-15',
-      status: 'shipped',
-      notes: 'Kartu untuk anggota pengajian',
-      estimatedDelivery: '2024-01-25'
-    },
-  ]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const [selectedRequest, setSelectedRequest] = useState<CardPrintRequest | null>(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'printing' | 'shipped' | 'completed'>('all');
+  const fetchRequests = async () => {
+    setLoading(true);
+    try {
+      const res = await getCardRequests(page, limit);
+      setRequests(res.data);
+      setTotal(res.total || 0);
+      setTotalPages(res.totalPages || 1);
+    } catch {
+      setRequests([]);
+      setTotal(0);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filteredRequests = requests.filter(request => 
-    filterStatus === 'all' || request.status === filterStatus
-  );
+  useEffect(() => {
+    fetchRequests();
+  }, [page]);
 
-  const handleStatusChange = (requestId: string, newStatus: CardPrintRequest['status']) => {
-    setRequests(prev => prev.map(req => {
-      if (req.id === requestId) {
-        const updatedReq = { ...req, status: newStatus };
-        if (newStatus === 'printing' || newStatus === 'shipped') {
-          updatedReq.estimatedDelivery = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        }
-        return updatedReq;
+  const handleApprove = async (id: string) => {
+    setLoading(true);
+    setMessage(null);
+    try {
+      const res = await updateCardRequestStatus(id, 'disetujui');
+      if (res.success) {
+        setMessage('Request berhasil disetujui');
+        fetchRequests();
+      } else {
+        setMessage(res.message || 'Gagal menyetujui request');
       }
-      return req;
-    }));
-    
-    const statusText = {
-      approved: 'disetujui',
-      printing: 'diproses cetak',
-      shipped: 'dikirim',
-      completed: 'selesai'
-    };
-    
-    alert(`Request berhasil diubah ke status ${statusText[newStatus]}`);
-  };
-
-  const handleGeneratePDF = (request: CardPrintRequest) => {
-    alert(`Generating PDF untuk ${request.quantity} kartu - ${request.masjidName}`);
-  };
-
-  const handleViewDetail = (request: CardPrintRequest) => {
-    setSelectedRequest(request);
-    setShowDetailModal(true);
+    } catch (err: any) {
+      setMessage(err?.response?.data?.message || 'Gagal menyetujui request');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -108,6 +54,7 @@ const CardPrintRequests: React.FC = () => {
       case 'pending':
         return <Clock className="h-4 w-4 text-yellow-500" />;
       case 'approved':
+      case 'disetujui':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'printing':
         return <Printer className="h-4 w-4 text-blue-500" />;
@@ -125,6 +72,7 @@ const CardPrintRequests: React.FC = () => {
       case 'pending':
         return 'Menunggu';
       case 'approved':
+      case 'disetujui':
         return 'Disetujui';
       case 'printing':
         return 'Proses Cetak';
@@ -142,6 +90,7 @@ const CardPrintRequests: React.FC = () => {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
       case 'approved':
+      case 'disetujui':
         return 'bg-green-100 text-green-800';
       case 'printing':
         return 'bg-blue-100 text-blue-800';
@@ -154,21 +103,6 @@ const CardPrintRequests: React.FC = () => {
     }
   };
 
-  const getNextStatusOptions = (currentStatus: string) => {
-    switch (currentStatus) {
-      case 'pending':
-        return [{ value: 'approved', label: 'Setujui', color: 'bg-green-600' }];
-      case 'approved':
-        return [{ value: 'printing', label: 'Mulai Cetak', color: 'bg-blue-600' }];
-      case 'printing':
-        return [{ value: 'shipped', label: 'Kirim', color: 'bg-purple-600' }];
-      case 'shipped':
-        return [{ value: 'completed', label: 'Selesai', color: 'bg-green-600' }];
-      default:
-        return [];
-    }
-  };
-
   return (
     <div className="space-y-4 md:space-y-6">
       <div>
@@ -176,97 +110,10 @@ const CardPrintRequests: React.FC = () => {
         <p className="text-gray-600 mt-1 text-sm md:text-base">Kelola permintaan cetak kartu dari satgas</p>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Clock className="h-4 w-4 md:h-5 md:w-5 text-yellow-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-xs md:text-sm font-medium text-gray-600">Pending</p>
-              <p className="text-lg md:text-xl font-bold text-gray-900">
-                {requests.filter(r => r.status === 'pending').length}
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-xs md:text-sm font-medium text-gray-600">Disetujui</p>
-              <p className="text-lg md:text-xl font-bold text-gray-900">
-                {requests.filter(r => r.status === 'approved').length}
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Printer className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-xs md:text-sm font-medium text-gray-600">Cetak</p>
-              <p className="text-lg md:text-xl font-bold text-gray-900">
-                {requests.filter(r => r.status === 'printing').length}
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Truck className="h-4 w-4 md:h-5 md:w-5 text-purple-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-xs md:text-sm font-medium text-gray-600">Dikirim</p>
-              <p className="text-lg md:text-xl font-bold text-gray-900">
-                {requests.filter(r => r.status === 'shipped').length}
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center">
-            <div className="p-2 bg-gray-100 rounded-lg">
-              <FileText className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-xs md:text-sm font-medium text-gray-600">Total</p>
-              <p className="text-lg md:text-xl font-bold text-gray-900">{requests.length}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {message && (
+        <div className="text-center p-3 rounded bg-green-100 text-green-700">{message}</div>
+      )}
 
-      {/* Filter */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-          <h3 className="text-base md:text-lg font-medium text-gray-900">Daftar Request</h3>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as any)}
-            className="w-full sm:w-auto border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">Semua Status</option>
-            <option value="pending">Menunggu</option>
-            <option value="approved">Disetujui</option>
-            <option value="printing">Proses Cetak</option>
-            <option value="shipped">Dikirim</option>
-            <option value="completed">Selesai</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Requests Table - Mobile Cards */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         {/* Desktop Table */}
         <div className="hidden md:block overflow-x-auto">
@@ -274,7 +121,7 @@ const CardPrintRequests: React.FC = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Satgas & Masjid
+                  Nama
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Jumlah Kartu
@@ -291,20 +138,20 @@ const CardPrintRequests: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredRequests.map((request) => (
+              {loading ? (
+                <tr><td colSpan={5} className="text-center py-8">Loading...</td></tr>
+              ) : requests.length === 0 ? (
+                <tr><td colSpan={5} className="text-center py-8">Belum ada request</td></tr>
+              ) : requests.map((request) => (
                 <tr key={request.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{request.satgasName}</div>
-                      <div className="text-sm text-gray-500">{request.masjidName}</div>
-                      <div className="text-sm text-gray-500">{request.satgasEmail}</div>
-                    </div>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {request.name}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{request.quantity} kartu</div>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {request.jumlah_kartu} kartu
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(request.requestDate).toLocaleDateString('id-ID')}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {new Date(request.created_at).toLocaleDateString('id-ID')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
@@ -313,183 +160,63 @@ const CardPrintRequests: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end space-x-2">
+                    {request.status === 'request' && (
                       <button
-                        onClick={() => handleViewDetail(request)}
-                        className="text-blue-600 hover:text-blue-900"
-                        title="Lihat Detail"
+                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                        onClick={() => handleApprove(request.id)}
+                        disabled={loading}
                       >
-                        <Eye className="h-4 w-4" />
+                        Setujui
                       </button>
-                      {(request.status === 'approved' || request.status === 'printing') && (
-                        <button
-                          onClick={() => handleGeneratePDF(request)}
-                          className="text-green-600 hover:text-green-900"
-                          title="Generate PDF"
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
-                      )}
-                      {getNextStatusOptions(request.status).map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => handleStatusChange(request.id, option.value as any)}
-                          className={`px-2 py-1 text-xs font-medium text-white rounded ${option.color} hover:opacity-80`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-
         {/* Mobile Cards */}
         <div className="md:hidden divide-y divide-gray-200">
-          {filteredRequests.map((request) => (
+          {loading ? (
+            <div className="text-center py-8">Loading...</div>
+          ) : requests.length === 0 ? (
+            <div className="text-center py-8">Belum ada request</div>
+          ) : requests.map((request) => (
             <div key={request.id} className="p-4">
-              <div className="flex items-start justify-between mb-3">
+              <div className="flex items-start justify-between mb-2">
                 <div>
-                  <div className="text-sm font-medium text-gray-900">{request.satgasName}</div>
-                  <div className="text-xs text-gray-500">{request.masjidName}</div>
-                  <div className="text-xs text-gray-500">{request.satgasEmail}</div>
+                  <div className="text-sm font-medium text-gray-900">{request.name}</div>
+                  <div className="text-xs text-gray-500">{request.jumlah_kartu} kartu</div>
+                  <div className="text-xs text-gray-500">{new Date(request.created_at).toLocaleDateString('id-ID')}</div>
                 </div>
                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
                   {getStatusIcon(request.status)}
                   <span className="ml-1">{getStatusText(request.status)}</span>
                 </span>
               </div>
-              
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-sm">
-                  <span className="font-medium">{request.quantity} kartu</span>
-                </div>
-                <div className="text-xs text-gray-500">
-                  {new Date(request.requestDate).toLocaleDateString('id-ID')}
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => handleViewDetail(request)}
-                  className="text-blue-600 hover:text-blue-900 p-1"
-                  title="Lihat Detail"
-                >
-                  <Eye className="h-4 w-4" />
-                </button>
-                <div className="flex items-center space-x-2">
-                  {(request.status === 'approved' || request.status === 'printing') && (
-                    <button
-                      onClick={() => handleGeneratePDF(request)}
-                      className="text-green-600 hover:text-green-900 p-1"
-                      title="Generate PDF"
-                    >
-                      <Download className="h-4 w-4" />
-                    </button>
-                  )}
-                  {getNextStatusOptions(request.status).map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => handleStatusChange(request.id, option.value as any)}
-                      className={`px-2 py-1 text-xs font-medium text-white rounded ${option.color} hover:opacity-80`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
+              <div className="flex items-center justify-end mt-2">
+                {request.status === 'request' && (
+                  <button
+                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
+                    onClick={() => handleApprove(request.id)}
+                    disabled={loading}
+                  >
+                    Setujui
+                  </button>
+                )}
               </div>
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Detail Modal */}
-      {showDetailModal && selectedRequest && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4">
-          <div className="relative top-10 mx-auto border w-full max-w-lg shadow-lg rounded-md bg-white">
-            <div className="p-5">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Detail Request Cetak Kartu</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Satgas</label>
-                  <p className="text-sm text-gray-900">{selectedRequest.satgasName}</p>
-                  <p className="text-sm text-gray-500">{selectedRequest.satgasEmail}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Masjid</label>
-                  <p className="text-sm text-gray-900">{selectedRequest.masjidName}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Jumlah Kartu</label>
-                  <p className="text-sm text-gray-900">{selectedRequest.quantity} kartu</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Tanggal Request</label>
-                  <p className="text-sm text-gray-900">
-                    {new Date(selectedRequest.requestDate).toLocaleDateString('id-ID')}
-                  </p>
-                </div>
-                {selectedRequest.estimatedDelivery && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Estimasi Pengiriman</label>
-                    <p className="text-sm text-gray-900">
-                      {new Date(selectedRequest.estimatedDelivery).toLocaleDateString('id-ID')}
-                    </p>
-                  </div>
-                )}
-                {selectedRequest.notes && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Catatan</label>
-                    <p className="text-sm text-gray-900">{selectedRequest.notes}</p>
-                  </div>
-                )}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Status</label>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedRequest.status)}`}>
-                    {getStatusIcon(selectedRequest.status)}
-                    <span className="ml-1">{getStatusText(selectedRequest.status)}</span>
-                  </span>
-                </div>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
-                <button
-                  onClick={() => setShowDetailModal(false)}
-                  className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Tutup
-                </button>
-                {(selectedRequest.status === 'approved' || selectedRequest.status === 'printing') && (
-                  <button
-                    onClick={() => {
-                      handleGeneratePDF(selectedRequest);
-                      setShowDetailModal(false);
-                    }}
-                    className="w-full sm:w-auto px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
-                  >
-                    Generate PDF
-                  </button>
-                )}
-                {getNextStatusOptions(selectedRequest.status).map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => {
-                      handleStatusChange(selectedRequest.id, option.value as any);
-                      setShowDetailModal(false);
-                    }}
-                    className={`w-full sm:w-auto px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${option.color} hover:opacity-80`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+        {/* Pagination */}
+        <div className="flex justify-between items-center p-4 border-t">
+          <span>Halaman {page} dari {totalPages} (Total: {total})</span>
+          <div className="space-x-2">
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1 border rounded disabled:opacity-50">Sebelumnya</button>
+            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3 py-1 border rounded disabled:opacity-50">Berikutnya</button>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

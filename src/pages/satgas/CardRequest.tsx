@@ -1,38 +1,71 @@
-import React, { useState } from 'react';
-import { CreditCard, Plus, CheckCircle, Clock, X } from 'lucide-react';
-
-interface CardRequest {
-  id: string;
-  quantity: number;
-  status: 'pending' | 'approved' | 'rejected';
-  requestDate: string;
-}
+import React, { useState, useEffect } from 'react';
+import { CreditCard, Plus, CheckCircle, Clock, X, Download } from 'lucide-react';
+import { requestCard, getCardRequests, generateCardPDF } from '../../api/auth';
 
 const CardRequest: React.FC = () => {
-  const [requests, setRequests] = useState<CardRequest[]>([
-    { id: '1', quantity: 50, status: 'approved', requestDate: '2024-01-15' },
-    { id: '2', quantity: 25, status: 'pending', requestDate: '2024-01-20' },
-  ]);
+  const [requests, setRequests] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [quantity, setQuantity] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const fetchRequests = async () => {
+    setLoading(true);
+    try {
+      const res = await getCardRequests();
+      setRequests(res.data);
+    } catch {
+      setRequests([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newRequest: CardRequest = {
-      id: Date.now().toString(),
-      quantity: parseInt(quantity),
-      status: 'pending',
-      requestDate: new Date().toISOString().split('T')[0]
-    };
-    setRequests([...requests, newRequest]);
-    setQuantity('');
-    setShowForm(false);
-    alert('Request kartu berhasil dikirim dan akan diproses oleh admin');
+    setLoading(true);
+    setMessage(null);
+    try {
+      const res = await requestCard(Number(quantity));
+      if (res.success) {
+        setMessage({ type: 'success', text: res.message || 'Request kartu berhasil dikirim' });
+        setShowForm(false);
+        setQuantity('');
+        fetchRequests();
+      } else {
+        setMessage({ type: 'error', text: res.message || 'Gagal mengirim request' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.response?.data?.message || 'Gagal mengirim request' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = async (id: string) => {
+    try {
+      const blob = await generateCardPDF(id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kartu_request_${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setMessage({ type: 'error', text: 'Gagal mengunduh PDF' });
+    }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'approved':
+      case 'disetujui':
         return <CheckCircle className="h-5 w-5 text-green-500" />;
       case 'pending':
         return <Clock className="h-5 w-5 text-yellow-500" />;
@@ -46,9 +79,12 @@ const CardRequest: React.FC = () => {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'approved':
+      case 'disetujui':
         return 'Disetujui';
       case 'pending':
         return 'Menunggu';
+      case 'request':
+        return 'Menunggu Disetujui';
       case 'rejected':
         return 'Ditolak';
       default:
@@ -71,6 +107,10 @@ const CardRequest: React.FC = () => {
           Request Baru
         </button>
       </div>
+
+      {message && (
+        <div className={`text-center p-3 rounded ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{message.text}</div>
+      )}
 
       {showForm && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -104,8 +144,9 @@ const CardRequest: React.FC = () => {
                   <button
                     type="submit"
                     className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                    disabled={loading}
                   >
-                    Kirim Request
+                    {loading ? 'Mengirim...' : 'Kirim Request'}
                   </button>
                 </div>
               </form>
@@ -137,13 +178,17 @@ const CardRequest: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {requests.map((request) => (
+              {loading ? (
+                <tr><td colSpan={4} className="text-center py-8">Loading...</td></tr>
+              ) : requests.length === 0 ? (
+                <tr><td colSpan={4} className="text-center py-8">Belum ada request</td></tr>
+              ) : requests.map((request) => (
                 <tr key={request.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {new Date(request.requestDate).toLocaleDateString('id-ID')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {request.quantity} kartu
+                    {request.jumlah_kartu} kartu
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -154,9 +199,12 @@ const CardRequest: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {request.status === 'approved' && (
-                      <button className="text-blue-600 hover:text-blue-900">
-                        Lihat Detail
+                    {(request.status === 'approved' || request.status === 'disetujui') && (
+                      <button
+                        className="text-blue-600 hover:text-blue-900 flex items-center"
+                        onClick={() => handleDownloadPDF(request.id)}
+                      >
+                        <Download className="h-4 w-4 mr-1" /> Download PDF
                       </button>
                     )}
                   </td>

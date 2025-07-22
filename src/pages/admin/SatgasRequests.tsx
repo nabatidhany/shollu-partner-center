@@ -167,6 +167,35 @@ const SatgasRequests: React.FC = () => {
             </tbody>
           </table>
         </div>
+        {/* Mobile Cards */}
+        <div className="md:hidden divide-y divide-gray-200">
+          {isLoading ? (
+            <div className="text-center py-8">Loading...</div>
+          ) : isError ? (
+            <div className="text-center py-8 text-red-500">Gagal memuat data</div>
+          ) : requests.length === 0 ? (
+            <div className="text-center py-8">Tidak ada data</div>
+          ) : requests.map((request) => (
+            <div key={request.id} className="p-4">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <div className="text-sm font-medium text-gray-900">{request.nama}</div>
+                  <div className="text-xs text-gray-500">{request.username}</div>
+                  <div className="text-xs text-gray-500">{request.contact}</div>
+                  <div className="text-xs text-gray-500">{request.nama_masjid}</div>
+                </div>
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  {String((request as any).status || 'pending')}
+                </span>
+              </div>
+              <div className="flex items-center justify-end mt-2 space-x-2">
+                <button onClick={() => handleViewDetail(request)} className="text-blue-600 hover:text-blue-900 p-1"><Eye className="h-4 w-4" /></button>
+                <button onClick={() => handleApprove(request.id)} className="text-green-600 hover:text-green-900 p-1"><CheckCircle className="h-4 w-4" /></button>
+                <button onClick={() => handleReject(request.id)} className="text-red-600 hover:text-red-900 p-1"><XCircle className="h-4 w-4" /></button>
+              </div>
+            </div>
+          ))}
+        </div>
         {/* Pagination */}
         <div className="flex justify-between items-center p-4 border-t">
           <span>Halaman {currentPage} dari {lastPage} (Total: {total})</span>

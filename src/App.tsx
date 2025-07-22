@@ -36,10 +36,12 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean 
     return <Navigate to="/login" replace />;
   }
 
+  // Only redirect to /dashboard if adminOnly is true and user is not admin
   if (adminOnly && user.role !== 'admin') {
     return <Navigate to="/dashboard" replace />;
   }
 
+  // Do not redirect to /dashboard for non-adminOnly routes
   return <>{children}</>;
 };
 
@@ -50,7 +52,7 @@ const AuthenticatedApp: React.FC = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         
         {/* Satgas Routes */}
-        <Route path="/card-request" element={<ComingSoon />} />
+        <Route path="/card-request" element={<CardRequest />} />
         <Route path="/member-registration" element={<MemberRegistration />} />
         <Route path="/attendance" element={<Attendance />} />
         <Route path="/print-cards" element={<ComingSoon />} />
@@ -78,7 +80,7 @@ const AuthenticatedApp: React.FC = () => {
           path="/card-print-requests" 
           element={
             <ProtectedRoute adminOnly>
-              <ComingSoon />
+              <CardPrintRequests />
             </ProtectedRoute>
           } 
         />

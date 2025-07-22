@@ -212,3 +212,34 @@ export interface StatistikAbsenSatgasResponse {
     }>;
   };
 }
+
+export interface CardRequestApi {
+  id: number | string;
+  name: string;
+  jumlah_kartu: number;
+  status: string;
+  created_at: string;
+  [key: string]: any;
+}
+
+export interface CardRequestApiResponse {
+  success: boolean;
+  message: string;
+  data?: CardRequestApi;
+}
+
+export interface CardRequestListApiResponse {
+  success: boolean;
+  message: string;
+  data: CardRequestApi[];
+  total?: number;
+  totalPages?: number;
+}
+
+export interface CardRequestStatusUpdate {
+  status: string;
+}
+
+export interface CardRequestGeneratePDF {
+  id_request: string;
+}

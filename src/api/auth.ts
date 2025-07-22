@@ -6,6 +6,7 @@ import { MasjidByEventApiResponse, RegisterSatgasApiResponse } from '../types';
 import { RegisterPesertaRequest, RegisterPesertaApiResponse } from '../types';
 import { AttendanceQrRequest, AttendanceQrApiResponse } from '../types';
 import { StatistikAbsenSatgasResponse } from '../types';
+import { CardRequestApiResponse, CardRequestListApiResponse, CardRequestStatusUpdate, CardRequestGeneratePDF } from '../types';
 
 export async function loginPartner(email: string, password: string): Promise<LoginApiResponse> {
   const response = await axios.post<LoginApiResponse>(
@@ -127,6 +128,63 @@ export async function getStatistikAbsenSatgas(): Promise<StatistikAbsenSatgasRes
       headers: {
         Authorization: `Bearer ${token}`,
       },
+    }
+  );
+  return response.data;
+}
+
+export async function requestCard(jumlah_kartu: number): Promise<CardRequestApiResponse> {
+  const token = localStorage.getItem('shollu_token');
+  const response = await axios.post<CardRequestApiResponse>(
+    'https://app.shollu.com/api/partners/satgas/card/request',
+    { jumlah_kartu },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return response.data;
+}
+
+export async function getCardRequests(page: number = 1, limit: number = 10): Promise<CardRequestListApiResponse> {
+  const token = localStorage.getItem('shollu_token');
+  const response = await axios.get<CardRequestListApiResponse>(
+    'https://app.shollu.com/api/partners/satgas/card/requests',
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      params: { page, limit },
+    }
+  );
+  return response.data;
+}
+
+export async function updateCardRequestStatus(id: string, status: string): Promise<CardRequestApiResponse> {
+  const token = localStorage.getItem('shollu_token');
+  const response = await axios.put<CardRequestApiResponse>(
+    `https://app.shollu.com/api/partners/satgas/card/requests/${id}/status`,
+    { status },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return response.data;
+}
+
+export async function generateCardPDF(id_request: string): Promise<Blob> {
+  const token = localStorage.getItem('shollu_token');
+  const response = await axios.post(
+    'https://app.shollu.com/api/partners/satgas/card/generate-by-request',
+    { id_request },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      responseType: 'blob',
     }
   );
   return response.data;
