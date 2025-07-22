@@ -179,7 +179,36 @@ export interface AttendanceQrRequest {
 }
 
 export interface AttendanceQrApiResponse {
-  success: boolean;
-  message: string;
-  data?: any;
+  success?: boolean;
+  message?: string;
+  error?: string;
+  fullname?: string;
+  tag?: string;
+  qr_code?: string;
+  event_id?: number;
+  user_id?: number;
+  [key: string]: any;
+}
+
+export interface StatistikAbsenSatgasResponse {
+  success?: boolean;
+  message?: string;
+  data: {
+    total_per_sholat: {
+      subuh: number;
+      dzuhur: number;
+      ashar?: number;
+      maghrib: number;
+      isya: number;
+      [key: string]: number | undefined;
+    };
+    latest_absensi: Array<{
+      id: string | number;
+      user_id?: number;
+      fullname?: string;
+      tag?: string;
+      waktu?: string;
+      [key: string]: any;
+    }>;
+  };
 }

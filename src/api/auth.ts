@@ -5,6 +5,7 @@ import { MemberPesertaApiResponse } from '../types';
 import { MasjidByEventApiResponse, RegisterSatgasApiResponse } from '../types';
 import { RegisterPesertaRequest, RegisterPesertaApiResponse } from '../types';
 import { AttendanceQrRequest, AttendanceQrApiResponse } from '../types';
+import { StatistikAbsenSatgasResponse } from '../types';
 
 export async function loginPartner(email: string, password: string): Promise<LoginApiResponse> {
   const response = await axios.post<LoginApiResponse>(
@@ -112,6 +113,19 @@ export async function submitAttendanceQr(data: AttendanceQrRequest): Promise<Att
     {
       headers: {
         'X-API-Key': 'shollusemakindidepan',
+      },
+    }
+  );
+  return response.data;
+}
+
+export async function getStatistikAbsenSatgas(): Promise<StatistikAbsenSatgasResponse> {
+  const token = localStorage.getItem('shollu_token');
+  const response = await axios.get<StatistikAbsenSatgasResponse>(
+    'https://app.shollu.com/api/partners/satgas/statistik-absen-satgas',
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
     }
   );

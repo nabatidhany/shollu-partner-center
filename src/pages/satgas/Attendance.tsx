@@ -4,6 +4,8 @@ import QRScanner from '../../components/QRScanner';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { submitAttendanceQr } from '../../api/auth';
 import { useAuth } from '../../contexts/AuthContext';
+import { getStatistikAbsenSatgas } from '../../api/auth';
+import { useEffect } from 'react';
 
 const EVENT_OPTIONS = [
   { id: 3, label: 'Sholat Champions' },
@@ -23,29 +25,36 @@ const Attendance: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<'home' | 'scanner'>('home');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([
-    {
-      id: '1',
-      memberName: 'Ahmad Fauzi',
-      cardNumber: 'KRT-001234',
-      prayer: 'subuh',
-      attendedAt: '2024-01-25T05:30:00Z'
-    },
-    {
-      id: '2',
-      memberName: 'Siti Rahmah',
-      cardNumber: 'KRT-001235',
-      prayer: 'dzuhur',
-      attendedAt: '2024-01-25T12:15:00Z'
-    },
-    {
-      id: '3',
-      memberName: 'Budi Wijaya',
-      cardNumber: 'KRT-001236',
-      prayer: 'ashar',
-      attendedAt: '2024-01-25T15:45:00Z'
-    },
-  ]);
+  const [dialog, setDialog] = useState<null | { type: 'success' | 'error', data: any }>(null);
+  const [statistik, setStatistik] = useState<{ total_per_sholat: any; latest_absensi: any[] }>({ total_per_sholat: {}, latest_absensi: [] });
+  const [statistikLoading, setStatistikLoading] = useState(true);
+  const [statistikError, setStatistikError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setStatistikLoading(true);
+    getStatistikAbsenSatgas()
+      .then(res => {
+        setStatistik(res.data);
+        setStatistikError(null);
+      })
+      .catch(err => {
+        setStatistikError('Gagal memuat statistik');
+      })
+      .finally(() => setStatistikLoading(false));
+  }, []);
+
+  const refreshStatistik = () => {
+    setStatistikLoading(true);
+    getStatistikAbsenSatgas()
+      .then(res => {
+        setStatistik(res.data);
+        setStatistikError(null);
+      })
+      .catch(err => {
+        setStatistikError('Gagal memuat statistik');
+      })
+      .finally(() => setStatistikLoading(false));
+  };
 
   const handleStartScan = () => {
     setCurrentStep('scanner');
@@ -64,23 +73,24 @@ const Attendance: React.FC = () => {
         mesin_id: user?.id || '',
         event_id: eventId,
       });
-      if (res.success) {
-        setSubmitMessage({ type: 'success', text: res.message || 'Absensi berhasil dicatat' });
-        // Optionally, update attendanceRecords if API returns data
+      if (res.fullname) {
+        setDialog({ type: 'success', data: res });
+        refreshStatistik();
+      } else if (res.error) {
+        setDialog({ type: 'error', data: res });
+      } else if (res.success === false && res.message) {
+        setDialog({ type: 'error', data: { error: res.message } });
       } else {
-        setSubmitMessage({ type: 'error', text: res.message || 'Absensi gagal' });
+        setDialog({ type: 'error', data: { error: 'Absensi gagal' } });
       }
     } catch (error: any) {
-      setSubmitMessage({ type: 'error', text: error?.response?.data?.message || 'Gagal mengirim data absensi. Coba lagi.' });
+      setDialog({ type: 'error', data: { error: error?.response?.data?.error || error?.response?.data?.message || 'Gagal mengirim data absensi. Coba lagi.' } });
     } finally {
       setIsSubmitting(false);
-      setTimeout(() => {
-        setSubmitMessage(null);
-      }, 2000);
     }
   };
 
-  const todayRecords = attendanceRecords.filter(record => 
+  const todayRecords = statistik.latest_absensi.filter(record => 
     new Date(record.attendedAt).toDateString() === new Date().toDateString()
   );
 
@@ -148,15 +158,20 @@ const Attendance: React.FC = () => {
           {/* Today's Statistics */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Statistik Hari Ini</h3>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {getPrayerStats().map((stat) => (
-                <div key={stat.value} className="text-center p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stat.count}</p>
-                  <p className="text-xs text-gray-500">{stat.time}</p>
-                </div>
-              ))}
-            </div>
+            {statistikLoading ? (
+              <div>Loading...</div>
+            ) : statistikError ? (
+              <div className="text-red-600">{statistikError}</div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'].map((prayer) => (
+                  <div key={prayer} className="text-center p-4 bg-gray-50 rounded-lg">
+                    <p className="text-sm font-medium text-gray-600">{prayer.charAt(0).toUpperCase() + prayer.slice(1)}</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{statistik.total_per_sholat[prayer] ?? 0}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </>
       )}
@@ -195,6 +210,39 @@ const Attendance: React.FC = () => {
         </div>
       )}
 
+      {/* Konfirmasi Dialog Modal */}
+      {dialog && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-sm w-full text-center">
+            {dialog.type === 'success' ? (
+              <>
+                <CheckCircle className="h-12 w-12 text-green-500 mb-2 mx-auto" />
+                <h2 className="text-xl font-bold mb-2 text-gray-900">Absensi Berhasil</h2>
+                <div className="mb-2 text-gray-700">
+                  <div><b>Nama:</b> {dialog.data.fullname}</div>
+                  <div><b>Event:</b> {EVENT_OPTIONS.find(e => e.id === dialog.data.event_id)?.label || dialog.data.event_id}</div>
+                  <div><b>Waktu Sholat:</b> {dialog.data.tag}</div>
+                  <div><b>QR Code:</b> {dialog.data.qr_code}</div>
+                </div>
+                <div className="text-green-700 mb-2">{dialog.data.message}</div>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="h-12 w-12 text-red-500 mb-2 mx-auto" />
+                <h2 className="text-xl font-bold mb-2 text-gray-900">Absensi Gagal</h2>
+                <div className="text-red-700 mb-2">{dialog.data.error}</div>
+              </>
+            )}
+            <button
+              onClick={() => setDialog(null)}
+              className="mt-4 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Recent Attendance */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
@@ -205,7 +253,7 @@ const Attendance: React.FC = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Anggota
+                  Nama
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Waktu Sholat
@@ -219,7 +267,9 @@ const Attendance: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {attendanceRecords.slice(0, 10).map((record) => (
+              {statistik.latest_absensi.length === 0 ? (
+                <tr><td colSpan={4} className="text-center py-8">Belum ada absensi hari ini</td></tr>
+              ) : statistik.latest_absensi.map((record) => (
                 <tr key={record.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -227,16 +277,23 @@ const Attendance: React.FC = () => {
                         <Users className="h-4 w-4 text-green-600" />
                       </div>
                       <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">{record.memberName}</div>
-                        <div className="text-sm text-gray-500">{record.cardNumber}</div>
+                        <div className="text-sm font-medium text-gray-900">{record.fullname || '-'}</div>
+                        <div className="text-sm text-gray-500">ID: {record.user_id || '-'}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
-                    {record.prayer}
+                    {record.tag || '-'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(record.attendedAt).toLocaleString('id-ID')}
+                  <td className="...">
+                    {record.waktu
+                      ? new Date(record.waktu.replace('Z', '')).toLocaleTimeString('id-ID', {
+                          hour12: false,
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                        }).replace(/:/g, '.')
+                      : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
