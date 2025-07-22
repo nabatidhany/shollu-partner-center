@@ -15,6 +15,8 @@ import SatgasRequests from './pages/admin/SatgasRequests';
 import MasjidRequests from './pages/admin/MasjidRequests';
 import MasjidEditRequests from './pages/admin/MasjidEditRequests';
 import CardPrintRequests from './pages/admin/CardPrintRequests';
+import RegisterSatgas from './pages/satgas/RegisterSatgas';
+import ComingSoon from './pages/ComingSoon';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean }> = ({ 
   children, 
@@ -48,19 +50,19 @@ const AuthenticatedApp: React.FC = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         
         {/* Satgas Routes */}
-        <Route path="/card-request" element={<CardRequest />} />
+        <Route path="/card-request" element={<ComingSoon />} />
         <Route path="/member-registration" element={<MemberRegistration />} />
         <Route path="/attendance" element={<Attendance />} />
-        <Route path="/print-cards" element={<PrintCards />} />
+        <Route path="/print-cards" element={<ComingSoon />} />
         <Route path="/member-list" element={<MemberList />} />
-        <Route path="/masjid-management" element={<MasjidManagement />} />
+        <Route path="/masjid-management" element={<ComingSoon />} />
         
         {/* Admin Routes */}
         <Route 
           path="/satgas-management" 
           element={
             <ProtectedRoute adminOnly>
-              <SatgasManagement />
+              <ComingSoon />
             </ProtectedRoute>
           } 
         />
@@ -76,7 +78,7 @@ const AuthenticatedApp: React.FC = () => {
           path="/card-print-requests" 
           element={
             <ProtectedRoute adminOnly>
-              <CardPrintRequests />
+              <ComingSoon />
             </ProtectedRoute>
           } 
         />
@@ -110,6 +112,8 @@ const App: React.FC = () => {
         <div className="min-h-screen bg-gray-50">
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register-satgas" element={<RegisterSatgas />} />
+            <Route path="/coming-soon" element={<ComingSoon />} />
             <Route path="/*" element={
               <ProtectedRoute>
                 <AuthenticatedApp />

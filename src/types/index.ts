@@ -58,3 +58,128 @@ export interface Attendance {
   attendedAt: string;
   prayer: 'subuh' | 'dzuhur' | 'ashar' | 'maghrib' | 'isya';
 }
+
+// Auth API response types
+export interface LoginApiResponse {
+  success: boolean;
+  message: string;
+  data: {
+    token: string;
+    user: {
+      id: number;
+      username: string;
+      name: string;
+      role: string;
+    };
+  };
+}
+
+// Satgas Pending API types
+export interface SatgasPendingItem {
+  id: number;
+  nama: string;
+  contact: string;
+  id_masjid: number;
+  nama_masjid: string;
+  id_user: number;
+  username: string;
+  name: string;
+}
+
+export interface SatgasSummary {
+  pending: string;
+  approved: string;
+  rejected: string;
+  total: number;
+}
+
+export interface SatgasPendingApiResponse {
+  success: boolean;
+  message: string;
+  data: {
+    current_page: number;
+    per_page: number;
+    total: number;
+    last_page: number;
+    data: SatgasPendingItem[];
+    summary: SatgasSummary;
+  };
+}
+
+export interface MemberPesertaItem {
+  id_event: number;
+  peserta_id: number;
+  fullname: string;
+  contact: string;
+  gender: 'male' | 'female';
+  dob: string;
+  qr_code: string;
+  status: number;
+  IsHideName: number;
+  masjid_id: number;
+  nama_masjid: string;
+  nama_satgas: string;
+}
+
+export interface MemberPesertaApiResponse {
+  success: boolean;
+  message: string;
+  data: {
+    data: MemberPesertaItem[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+    summary?: {
+      total_male: number;
+      total_female: number;
+    };
+  };
+}
+
+export interface MasjidByEventItem {
+  id: number;
+  name: string;
+}
+
+export interface MasjidByEventApiResponse {
+  success: boolean;
+  message: string;
+  data: MasjidByEventItem[];
+}
+
+export interface RegisterSatgasApiResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+}
+
+export interface RegisterPesertaRequest {
+  fullname: string;
+  contact: string;
+  gender: 'male' | 'female';
+  dob: string;
+  qr_code: string;
+  id_event: number;
+  is_hide_name: boolean;
+}
+
+export interface RegisterPesertaApiResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+}
+
+export interface AttendanceQrRequest {
+  qr_code: string;
+  mesin_id: string;
+  event_id: number;
+}
+
+export interface AttendanceQrApiResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+}

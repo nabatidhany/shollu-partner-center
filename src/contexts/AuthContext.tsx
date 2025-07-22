@@ -1,9 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
+import { useMutation } from '@tanstack/react-query';
+import { loginPartner } from '../api/auth';
+import { LoginApiResponse } from '../types';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean | string>;
   register: (data: RegisterData) => Promise<boolean>;
   logout: () => void;
   loading: boolean;
@@ -28,26 +31,7 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  // Mock users for demo
-  const mockUsers: User[] = [
-    {
-      id: '1',
-      email: 'admin@shollu.com',
-      name: 'Admin Shollu',
-      role: 'admin',
-      createdAt: '2024-01-01T00:00:00Z'
-    },
-    {
-      id: '2',
-      email: 'satgas@shollu.com',
-      name: 'Ahmad Satgas',
-      role: 'satgas',
-      masjidId: '1',
-      createdAt: '2024-01-01T00:00:00Z'
-    }
-  ];
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -55,25 +39,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
-    setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    setLoading(true);
-    
-    // Mock login - in real app, this would be an API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const foundUser = mockUsers.find(u => u.email === email);
-    if (foundUser && password === 'password') {
-      setUser(foundUser);
-      localStorage.setItem('shollu_user', JSON.stringify(foundUser));
-      setLoading(false);
-      return true;
+  const loginMutation = useMutation({
+    mutationFn: async (variables: { email: string; password: string }) => {
+      return loginPartner(variables.email, variables.password);
+    },
+    onMutate: () => setLoading(true),
+    onSettled: () => setLoading(false),
+  });
+
+  const login = async (email: string, password: string): Promise<boolean | string> => {
+    try {
+      const response = await loginMutation.mutateAsync({ email, password });
+      if (response.success) {
+        // Map backend user role to User type
+        const backendRole = response.data.user.role;
+        const mappedRole = backendRole === 'admin' ? 'admin' : 'satgas'; // TODO: adjust if more roles
+        const userData: User = {
+          id: response.data.user.id.toString(),
+          email,
+          name: response.data.user.name,
+          role: mappedRole,
+          createdAt: new Date().toISOString(),
+        };
+        setUser(userData);
+        localStorage.setItem('shollu_user', JSON.stringify(userData));
+        localStorage.setItem('shollu_token', response.data.token);
+        return true;
+      }
+      return response.message || false;
+    } catch (err: any) {
+      // Jika error dari API, ambil message
+      if (err?.response?.data?.message) {
+        return err.response.data.message;
+      }
+      return false;
     }
-    
-    setLoading(false);
-    return false;
   };
 
   const register = async (data: RegisterData): Promise<boolean> => {

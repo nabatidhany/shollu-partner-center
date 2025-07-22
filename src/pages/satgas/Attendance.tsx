@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { QrCode, Scan, Users, CheckCircle, AlertCircle } from 'lucide-react';
 import QRScanner from '../../components/QRScanner';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { submitAttendanceQr } from '../../api/auth';
+import { useAuth } from '../../contexts/AuthContext';
+
+const EVENT_OPTIONS = [
+  { id: 3, label: 'Sholat Champions' },
+];
 
 interface AttendanceRecord {
   id: string;
@@ -12,6 +18,8 @@ interface AttendanceRecord {
 }
 
 const Attendance: React.FC = () => {
+  const { user } = useAuth();
+  const [eventId, setEventId] = useState(3);
   const [currentStep, setCurrentStep] = useState<'home' | 'scanner'>('home');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -50,45 +58,22 @@ const Attendance: React.FC = () => {
   const handleQrScan = async (qrData: string) => {
     setIsSubmitting(true);
     setSubmitMessage(null);
-
     try {
-      // Mock API call to submit attendance
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock response - randomly success or error for demo
-      const isSuccess = Math.random() > 0.3;
-      
-      if (isSuccess) {
-        // Mock member data
-        const mockMember = 'Anggota ' + Math.random().toString(36).substr(2, 4);
-        const currentHour = new Date().getHours();
-        let prayer: AttendanceRecord['prayer'] = 'dzuhur';
-        
-        if (currentHour < 6) prayer = 'subuh';
-        else if (currentHour < 13) prayer = 'dzuhur';
-        else if (currentHour < 16) prayer = 'ashar';
-        else if (currentHour < 19) prayer = 'maghrib';
-        else prayer = 'isya';
-        
-        const newRecord: AttendanceRecord = {
-          id: Date.now().toString(),
-          memberName: mockMember,
-          cardNumber: qrData,
-          prayer: prayer,
-          attendedAt: new Date().toISOString()
-        };
-        
-        setAttendanceRecords([newRecord, ...attendanceRecords]);
-        setSubmitMessage({ type: 'success', text: `Absensi ${mockMember} berhasil dicatat` });
+      const res = await submitAttendanceQr({
+        qr_code: qrData,
+        mesin_id: user?.id || '',
+        event_id: eventId,
+      });
+      if (res.success) {
+        setSubmitMessage({ type: 'success', text: res.message || 'Absensi berhasil dicatat' });
+        // Optionally, update attendanceRecords if API returns data
       } else {
-        setSubmitMessage({ type: 'error', text: 'Kartu tidak terdaftar atau sudah absen hari ini' });
+        setSubmitMessage({ type: 'error', text: res.message || 'Absensi gagal' });
       }
-    } catch (error) {
-      setSubmitMessage({ type: 'error', text: 'Gagal mengirim data absensi. Coba lagi.' });
+    } catch (error: any) {
+      setSubmitMessage({ type: 'error', text: error?.response?.data?.message || 'Gagal mengirim data absensi. Coba lagi.' });
     } finally {
       setIsSubmitting(false);
-      
-      // Auto hide message and continue scanning after 2 seconds
       setTimeout(() => {
         setSubmitMessage(null);
       }, 2000);
@@ -122,6 +107,20 @@ const Attendance: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Absensi Jamaah</h1>
         <p className="text-gray-600 mt-1">Catat kehadiran jamaah dengan scan kartu anggota</p>
+      </div>
+
+      {/* Event Dropdown */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex items-center space-x-4">
+        <label className="text-sm font-medium text-gray-700">Event</label>
+        <select
+          value={eventId}
+          onChange={e => setEventId(Number(e.target.value))}
+          className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          {EVENT_OPTIONS.map(opt => (
+            <option key={opt.id} value={opt.id}>{opt.label}</option>
+          ))}
+        </select>
       </div>
 
       {currentStep === 'home' && (

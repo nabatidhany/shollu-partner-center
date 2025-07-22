@@ -25,8 +25,9 @@ const Sidebar: React.FC = () => {
     { path: '/satgas-management', icon: Users, label: 'Manajemen Satgas' },
     { path: '/satgas-requests', icon: UserCheck, label: 'Request Satgas' },
     { path: '/card-print-requests', icon: PrinterIcon, label: 'Request Cetak Kartu' },
-    { path: '/masjid-requests', icon: Building2, label: 'Request Masjid' },
-    { path: '/masjid-edit-requests', icon: Settings, label: 'Edit Masjid' },
+    // { path: '/masjid-requests', icon: Building2, label: 'Request Masjid' },
+    // { path: '/masjid-edit-requests', icon: Settings, label: 'Edit Masjid' },
+    { path: '/member-list', icon: ClipboardList, label: 'Daftar Anggota' },
   ];
 
   const satgasMenuItems = [
@@ -34,9 +35,9 @@ const Sidebar: React.FC = () => {
     { path: '/card-request', icon: CreditCard, label: 'Request Kartu' },
     { path: '/member-registration', icon: UserPlus, label: 'Registrasi Anggota' },
     { path: '/attendance', icon: QrCode, label: 'Absensi' },
-    { path: '/print-cards', icon: PrinterIcon, label: 'Cetak Kartu' },
+    // { path: '/print-cards', icon: PrinterIcon, label: 'Cetak Kartu' },
     { path: '/member-list', icon: ClipboardList, label: 'Daftar Anggota' },
-    { path: '/masjid-management', icon: Building2, label: 'Manajemen Masjid' },
+    // { path: '/masjid-management', icon: Building2, label: 'Manajemen Masjid' },
   ];
 
   const menuItems = user?.role === 'admin' ? adminMenuItems : satgasMenuItems;

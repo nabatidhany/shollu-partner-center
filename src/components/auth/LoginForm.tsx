@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -13,9 +14,9 @@ const LoginForm: React.FC = () => {
     e.preventDefault();
     setError('');
     
-    const success = await login(email, password);
-    if (!success) {
-      setError('Email atau password salah');
+    const result = await login(email, password);
+    if (result !== true) {
+      setError(typeof result === 'string' ? result : 'Email atau password salah');
     }
   };
 
@@ -36,15 +37,15 @@ const LoginForm: React.FC = () => {
 
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email
+              Username
             </label>
             <input
-              type="email"
+              type="text"
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
-              placeholder="masukkan@email.com"
+              placeholder="masukkan username"
               required
             />
           </div>
@@ -94,8 +95,12 @@ const LoginForm: React.FC = () => {
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-xs lg:text-sm text-gray-600">
+          {/* <p className="text-xs lg:text-sm text-gray-600">
             Demo: admin@shollu.com / satgas@shollu.com (password: password)
+          </p> */}
+          <p className="text-xs lg:text-sm text-gray-600 mt-2">
+            Belum punya akun?{' '}
+            <Link to="/register-satgas" className="text-blue-600 hover:underline">Daftar Satgas di sini</Link>
           </p>
         </div>
       </div>
