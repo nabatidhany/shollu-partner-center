@@ -23,6 +23,9 @@ const LoginForm: React.FC = () => {
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="bg-white shadow-xl rounded-lg p-8">
+        <div className="flex justify-center mb-6">
+          <img src="/logo.svg" alt="Logo" className="h-14 w-auto" />
+        </div>
         <div className="text-center mb-8">
           <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Shollu Partner Center</h1>
           <p className="text-gray-600 mt-2 text-sm lg:text-base">Masuk ke akun Anda</p>

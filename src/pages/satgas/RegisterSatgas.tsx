@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getMasjidByEvent, registerSatgas } from '../../api/auth';
 import { MasjidByEventItem } from '../../types';
 import { Link } from 'react-router-dom';
@@ -63,6 +63,9 @@ const RegisterSatgas: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto mt-10 bg-white p-8 rounded shadow">
+      <div className="flex justify-center mb-6">
+        <img src="/logo.svg" alt="Logo" className="h-14 w-auto" />
+      </div>
       {/* Audio Elements */}
       <audio ref={successAudioRef} src="/sound/success.wav" />
       <audio ref={errorAudioRef} src="/sound/error.wav" />
