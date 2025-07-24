@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Bell, User, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
+  const navigate = useNavigate();
   
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -54,7 +56,10 @@ const Header: React.FC = () => {
                     <Bell className="mr-3 h-4 w-4" />
                     Notifikasi
                   </button>
-                  <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <button
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => { setShowDropdown(false); navigate('/settings'); }}
+                  >
                     <Settings className="mr-3 h-4 w-4" />
                     Pengaturan
                   </button>

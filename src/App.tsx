@@ -9,6 +9,7 @@ import MemberRegistration from './pages/satgas/MemberRegistration';
 import Attendance from './pages/satgas/Attendance';
 import PrintCards from './pages/satgas/PrintCards';
 import MemberList from './pages/satgas/MemberList';
+import Settings from './pages/satgas/Settings';
 import MasjidManagement from './pages/satgas/MasjidManagement';
 import SatgasManagement from './pages/admin/SatgasManagement';
 import SatgasRequests from './pages/admin/SatgasRequests';
@@ -58,6 +59,7 @@ const AuthenticatedApp: React.FC = () => {
         <Route path="/print-cards" element={<ComingSoon />} />
         <Route path="/member-list" element={<MemberList />} />
         <Route path="/masjid-management" element={<ComingSoon />} />
+        <Route path="/settings" element={<Settings />} />
         
         {/* Admin Routes */}
         <Route 

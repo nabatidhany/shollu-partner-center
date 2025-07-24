@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { QrCode, Scan, Users, CheckCircle, AlertCircle } from 'lucide-react';
 import QRScanner from '../../components/QRScanner';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -29,7 +29,9 @@ const Attendance: React.FC = () => {
   const [statistik, setStatistik] = useState<{ total_per_sholat: any; latest_absensi: any[] }>({ total_per_sholat: {}, latest_absensi: [] });
   const [statistikLoading, setStatistikLoading] = useState(true);
   const [statistikError, setStatistikError] = useState<string | null>(null);
-
+  // Audio refs
+  const successAudioRef = useRef<HTMLAudioElement>(null);
+  const errorAudioRef = useRef<HTMLAudioElement>(null);
   useEffect(() => {
     setStatistikLoading(true);
     getStatistikAbsenSatgas()
@@ -75,15 +77,20 @@ const Attendance: React.FC = () => {
       });
       if (res.fullname) {
         setDialog({ type: 'success', data: res });
+        successAudioRef.current?.play();
         refreshStatistik();
       } else if (res.error) {
+        errorAudioRef.current?.play();
         setDialog({ type: 'error', data: res });
       } else if (res.success === false && res.message) {
+        errorAudioRef.current?.play();
         setDialog({ type: 'error', data: { error: res.message } });
       } else {
+        errorAudioRef.current?.play();
         setDialog({ type: 'error', data: { error: 'Absensi gagal' } });
       }
     } catch (error: any) {
+      errorAudioRef.current?.play();
       setDialog({ type: 'error', data: { error: error?.response?.data?.error || error?.response?.data?.message || 'Gagal mengirim data absensi. Coba lagi.' } });
     } finally {
       setIsSubmitting(false);
@@ -112,8 +119,19 @@ const Attendance: React.FC = () => {
     }));
   };
 
+  // Auto close dialog after 500ms
+  useEffect(() => {
+    if (dialog) {
+      const timer = setTimeout(() => setDialog(null), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [dialog]);
+
   return (
     <div className="space-y-6">
+      {/* Audio Elements */}
+      <audio ref={successAudioRef} src="/sound/success.wav" />
+      <audio ref={errorAudioRef} src="/sound/error.wav" />
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Absensi Jamaah</h1>
         <p className="text-gray-600 mt-1">Catat kehadiran jamaah dengan scan kartu anggota</p>

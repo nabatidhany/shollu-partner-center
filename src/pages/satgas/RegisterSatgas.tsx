@@ -19,6 +19,8 @@ const RegisterSatgas: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const successAudioRef = useRef<HTMLAudioElement>(null);
+  const errorAudioRef = useRef<HTMLAudioElement>(null);
   useEffect(() => {
     setMasjidList([]);
     setForm(f => ({ ...f, masjid_id: 0 }));
@@ -45,11 +47,14 @@ const RegisterSatgas: React.FC = () => {
       });
       if (res.success) {
         setSuccess('Pendaftaran berhasil!');
+        successAudioRef.current?.play();
         setForm({ name: '', username: '', password: '', masjid_id: 0 });
       } else {
+        errorAudioRef.current?.play();
         setError(res.message || 'Gagal mendaftar');
       }
     } catch (err: any) {
+      errorAudioRef.current?.play();
       setError(err?.response?.data?.message || 'Gagal mendaftar');
     } finally {
       setLoading(false);
@@ -58,6 +63,9 @@ const RegisterSatgas: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto mt-10 bg-white p-8 rounded shadow">
+      {/* Audio Elements */}
+      <audio ref={successAudioRef} src="/sound/success.wav" />
+      <audio ref={errorAudioRef} src="/sound/error.wav" />
       <h1 className="text-2xl font-bold mb-6 text-center">Register Satgas</h1>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>

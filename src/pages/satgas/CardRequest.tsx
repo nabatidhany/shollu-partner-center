@@ -57,6 +57,8 @@ const CardRequest: React.FC = () => {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      // Tambahkan fetchRequests setelah download
+      fetchRequests();
     } catch {
       setMessage({ type: 'error', text: 'Gagal mengunduh PDF' });
     }
@@ -69,6 +71,8 @@ const CardRequest: React.FC = () => {
         return <CheckCircle className="h-5 w-5 text-green-500" />;
       case 'pending':
         return <Clock className="h-5 w-5 text-yellow-500" />;
+      case 'terdownload':
+        return <CheckCircle className="h-5 w-5 text-green-900" />;
       case 'rejected':
         return <X className="h-5 w-5 text-red-500" />;
       default:
@@ -83,6 +87,8 @@ const CardRequest: React.FC = () => {
         return 'Disetujui';
       case 'pending':
         return 'Menunggu';
+      case 'terdownload':
+        return 'Sudah di Download';
       case 'request':
         return 'Menunggu Disetujui';
       case 'rejected':

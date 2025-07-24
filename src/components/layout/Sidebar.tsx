@@ -38,6 +38,7 @@ const Sidebar: React.FC = () => {
     // { path: '/print-cards', icon: PrinterIcon, label: 'Cetak Kartu' },
     { path: '/member-list', icon: ClipboardList, label: 'Daftar Anggota' },
     // { path: '/masjid-management', icon: Building2, label: 'Manajemen Masjid' },
+    // { path: '/settings', icon: Settings, label: 'Pengaturan' },
   ];
 
   const menuItems = user?.role === 'admin' ? adminMenuItems : satgasMenuItems;
@@ -75,6 +76,7 @@ const Sidebar: React.FC = () => {
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="p-4 lg:p-6">
+          <img src="/logo.svg" alt="Logo" className="h-10 w-auto mb-2 mx-auto" />
           <h1 className="text-lg lg:text-xl font-bold text-gray-800">Shollu Partner Center</h1>
           <p className="text-xs lg:text-sm text-gray-500 mt-1">
             {user?.role === 'admin' ? 'Admin Panel' : 'Satgas Panel'}
