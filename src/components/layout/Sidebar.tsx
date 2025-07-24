@@ -19,6 +19,28 @@ const Sidebar: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
+  const [showInstallBanner, setShowInstallBanner] = React.useState(false);
+
+  React.useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBanner(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setShowInstallBanner(false);
+      }
+    }
+  };
 
   const adminMenuItems = [
     { path: '/dashboard', icon: Home, label: 'Dashboard' },
@@ -50,6 +72,18 @@ const Sidebar: React.FC = () => {
 
   return (
     <>
+      {/* PWA Install Banner */}
+      {showInstallBanner && (
+        <div className="fixed bottom-4 left-4 right-4 z-50 flex items-center justify-between bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg animate-fade-in">
+          <span>Install aplikasi ini di perangkat Anda untuk pengalaman lebih baik!</span>
+          <button
+            onClick={handleInstallClick}
+            className="ml-4 px-4 py-2 bg-white text-blue-600 rounded shadow hover:bg-blue-100 font-semibold"
+          >
+            Install
+          </button>
+        </div>
+      )}
       {/* Mobile menu button */}
       <div className="lg:hidden fixed top-4 left-4 z-50">
         <button
