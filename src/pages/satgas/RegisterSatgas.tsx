@@ -4,11 +4,12 @@ import { MasjidByEventItem } from '../../types';
 import { Link } from 'react-router-dom';
 
 const EVENT_OPTIONS = [
+  { id: 1, label: 'Pejuang Quran' },
   { id: 3, label: 'Sholat Champions' },
 ];
 
 const RegisterSatgas: React.FC = () => {
-  const [eventId, setEventId] = useState(3);
+  const [selectedEvents, setSelectedEvents] = useState<number[]>([3]);
   const [masjidList, setMasjidList] = useState<MasjidByEventItem[]>([]);
   const [form, setForm] = useState({
     name: '',
@@ -24,17 +25,32 @@ const RegisterSatgas: React.FC = () => {
   useEffect(() => {
     setMasjidList([]);
     setForm(f => ({ ...f, masjid_id: 0 }));
-    getMasjidByEvent(eventId).then(res => {
-      setMasjidList(res.data);
-    });
-  }, [eventId]);
+    // Use the first selected event for masjid list (or you can modify API to accept multiple events)
+    if (selectedEvents.length > 0) {
+      getMasjidByEvent(selectedEvents[0]).then(res => {
+        setMasjidList(res.data);
+      });
+    }
+  }, [selectedEvents]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handleEventChange = (eventId: number, checked: boolean) => {
+    if (checked) {
+      setSelectedEvents(prev => [...prev, eventId]);
+    } else {
+      setSelectedEvents(prev => prev.filter(id => id !== eventId));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (selectedEvents.length === 0) {
+      setError('Pilih minimal satu event');
+      return;
+    }
     setLoading(true);
     setSuccess(null);
     setError(null);
@@ -44,11 +60,13 @@ const RegisterSatgas: React.FC = () => {
         username: form.username,
         password: form.password,
         masjid_id: Number(form.masjid_id),
+        id_event: selectedEvents, // Send array of selected event IDs
       });
       if (res.success) {
         setSuccess('Pendaftaran berhasil!');
         successAudioRef.current?.play();
         setForm({ name: '', username: '', password: '', masjid_id: 0 });
+        setSelectedEvents([3]); // Reset to default
       } else {
         errorAudioRef.current?.play();
         setError(res.message || 'Gagal mendaftar');
@@ -72,16 +90,25 @@ const RegisterSatgas: React.FC = () => {
       <h1 className="text-2xl font-bold mb-6 text-center">Register Satgas</h1>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Event</label>
-          <select
-            value={eventId}
-            onChange={e => setEventId(Number(e.target.value))}
-            className="w-full border border-gray-300 rounded-md px-3 py-2"
-          >
+          <label className="block text-sm font-medium text-gray-700 mb-2">Event</label>
+          <div className="space-y-2">
             {EVENT_OPTIONS.map(opt => (
-              <option key={opt.id} value={opt.id}>{opt.label}</option>
+              <label key={opt.id} className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={selectedEvents.includes(opt.id)}
+                  onChange={(e) => handleEventChange(opt.id, e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="ml-2 text-sm text-gray-700">{opt.label}</span>
+              </label>
             ))}
-          </select>
+          </div>
+          {/* {selectedEvents.length > 1 && (
+            <p className="text-xs text-orange-600 mt-1">
+              ⚠️ Saat ini hanya event pertama yang akan didaftarkan (API sedang diperbarui)
+            </p>
+          )} */}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Masjid</label>

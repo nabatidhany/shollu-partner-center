@@ -32,11 +32,11 @@ export async function getPendingSatgas(page: number, limit: number): Promise<Sat
   return response.data;
 }
 
-export async function approveSatgas(id: number, id_event: number): Promise<any> {
+export async function approveSatgas(id: number): Promise<any> {
   const token = localStorage.getItem('shollu_token');
   const response = await axios.post(
     'https://app.shollu.com/api/partners/satgas/approve',
-    { id, id_event },
+    { id },
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -85,7 +85,7 @@ export async function getMasjidByEvent(event_id: number): Promise<MasjidByEventA
   return response.data;
 }
 
-export async function registerSatgas(data: { name: string; username: string; password: string; masjid_id: number }): Promise<RegisterSatgasApiResponse> {
+export async function registerSatgas(data: { name: string; username: string; password: string; masjid_id: number; id_event?: number[] }): Promise<RegisterSatgasApiResponse> {
   const response = await axios.post<RegisterSatgasApiResponse>(
     'https://app.shollu.com/auth/partners-register',
     data

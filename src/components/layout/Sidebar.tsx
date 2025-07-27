@@ -57,6 +57,7 @@ const Sidebar: React.FC = () => {
     { path: '/card-request', icon: CreditCard, label: 'Request Kartu' },
     { path: '/member-registration', icon: UserPlus, label: 'Registrasi Anggota' },
     { path: '/attendance', icon: QrCode, label: 'Absensi' },
+    { path: '/kehadiran-pejuang-quran', icon: CheckSquare, label: 'Kehadiran Pejuang Quran' },
     // { path: '/print-cards', icon: PrinterIcon, label: 'Cetak Kartu' },
     { path: '/member-list', icon: ClipboardList, label: 'Daftar Anggota' },
     // { path: '/masjid-management', icon: Building2, label: 'Manajemen Masjid' },

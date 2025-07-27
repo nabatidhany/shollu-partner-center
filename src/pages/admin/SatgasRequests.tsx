@@ -5,6 +5,11 @@ import { getPendingSatgas, approveSatgas, rejectSatgas } from '../../api/auth';
 import { SatgasPendingItem } from '../../types';
 import { SatgasPendingApiResponse } from '../../types';
 
+const EVENT_OPTIONS = [
+  { id: 1, label: 'Pejuang Quran' },
+  { id: 3, label: 'Sholat Champions' },
+];
+
 const SatgasRequests: React.FC = () => {
   const [page, setPage] = useState(1);
   const limit = 10;
@@ -24,7 +29,7 @@ const SatgasRequests: React.FC = () => {
   });
 
   const approveMutation = useMutation({
-    mutationFn: ({ id, id_event }: { id: number; id_event: number }) => approveSatgas(id, id_event),
+    mutationFn: ({ id }: { id: number }) => approveSatgas(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pending-satgas'] }),
   });
   const rejectMutation = useMutation({
@@ -35,11 +40,26 @@ const SatgasRequests: React.FC = () => {
   const handleApprove = (id: number) => {
     const target = requests.find(r => r.id === id) || null;
     setApproveTarget(target);
+  
+    // ↓ Ini bagian yang harus benar
+    if (target && (target as any).id_event) {
+      const eventData = (target as any).id_event;
+      if (Array.isArray(eventData)) {
+        setSelectedEvent(Number(eventData[0]));
+      } else if (typeof eventData === 'number') {
+        setSelectedEvent(eventData);
+      }
+    } else {
+      setSelectedEvent(3); // default fallback
+    }
+  
     setShowApproveModal(true);
   };
+  
   const confirmApprove = () => {
     if (approveTarget) {
-      approveMutation.mutate({ id: approveTarget.id, id_event: selectedEvent });
+      // Don't send id_event to API since it's read-only and already set in registration
+      approveMutation.mutate({ id: approveTarget.id });
       setShowApproveModal(false);
       setApproveTarget(null);
     }
@@ -60,6 +80,21 @@ const SatgasRequests: React.FC = () => {
     setSelectedRequest(request);
     setShowDetailModal(true);
   };
+
+  const getEventLabels = (eventIds: number | number[]): string => {
+    if (!eventIds) return 'Tidak ada event';
+  
+    const idsArray = Array.isArray(eventIds) ? eventIds : [eventIds];
+  
+    const labels = idsArray.map(id => {
+      const event = EVENT_OPTIONS.find(opt => opt.id === Number(id));
+      return event ? event.label : `Event ID: ${id}`;
+    });
+  
+    return labels.join(', ');
+  };
+  
+  
 
   // Stats
   const summary = data?.data?.summary;
@@ -229,6 +264,12 @@ const SatgasRequests: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700">Masjid</label>
                   <p className="text-sm text-gray-900">{selectedRequest.nama_masjid}</p>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Event</label>
+                  <p className="text-sm text-gray-900">
+                    {getEventLabels((selectedRequest as any).id_event || [])}
+                  </p>
+                </div>
               </div>
               <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
                 <button onClick={() => setShowDetailModal(false)} className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Tutup</button>
@@ -248,14 +289,19 @@ const SatgasRequests: React.FC = () => {
               <h3 className="text-lg font-medium text-gray-900 mb-4">Konfirmasi Approve</h3>
               <p className="mb-4">Apakah Anda yakin ingin menyetujui <b>{approveTarget.nama}</b>?</p>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sholat Champion</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Event</label>
                 <select
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100"
                   value={selectedEvent}
-                  onChange={e => setSelectedEvent(Number(e.target.value))}
+                  disabled
                 >
-                  <option value={3}>Sholat Champion</option>
+                  {EVENT_OPTIONS.map(opt => (
+                    <option key={opt.id} value={opt.id}>{opt.label}</option>
+                  ))}
                 </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Event dipilih berdasarkan data pendaftaran
+                </p>
               </div>
               <div className="flex justify-end space-x-2">
                 <button onClick={() => setShowApproveModal(false)} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Batal</button>
