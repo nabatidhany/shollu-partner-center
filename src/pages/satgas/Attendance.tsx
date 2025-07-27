@@ -430,7 +430,7 @@ const Attendance: React.FC = () => {
   // Auto close dialog after 500ms
   useEffect(() => {
     if (dialog) {
-      const timer = setTimeout(() => setDialog(null), 500);
+      const timer = setTimeout(() => setDialog(null), 1000);
       return () => clearTimeout(timer);
     }
   }, [dialog]);
