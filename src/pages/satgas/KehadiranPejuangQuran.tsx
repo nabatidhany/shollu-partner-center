@@ -15,7 +15,7 @@ const KehadiranPejuangQuran: React.FC = () => {
     setError(null);
     try {
       const token = localStorage.getItem('shollu_token');
-      const res = await axios.get(`https://app/shollu.com/api/partners/pejuang-quran/list?page=${pageNum}&limit=${limitNum}`, {
+      const res = await axios.get(`https://app.shollu.com/api/partners/pejuang-quran/list?page=${pageNum}&limit=${limitNum}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.data && res.data.success && res.data.data && Array.isArray(res.data.data.data)) {
