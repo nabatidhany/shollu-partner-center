@@ -318,7 +318,13 @@ const Attendance: React.FC = () => {
         if (res.data && res.data.success && Array.isArray(res.data.data)) {
           setEventOptions(res.data.data);
           if (res.data.data.length > 0) {
-            setEventId(res.data.data[0].id_event);
+            // Cari Sholat Champions (id_event: 3)
+            const champions = res.data.data.find((e: any) => e.id_event === 3);
+            if (champions) {
+              setEventId(3);
+            } else {
+              setEventId(res.data.data[0].id_event);
+            }
           }
         }
       } catch (err) {
