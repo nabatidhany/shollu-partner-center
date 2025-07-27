@@ -9,7 +9,55 @@ const KehadiranPejuangQuran: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+  const [checkingAccess, setCheckingAccess] = useState(true);
+  const [requesting, setRequesting] = useState(false);
+  const [requestMessage, setRequestMessage] = useState<string | null>(null);
 
+  // Cek akses event pejuang quran
+  useEffect(() => {
+    const checkAccess = async () => {
+      setCheckingAccess(true);
+      setHasAccess(null);
+      setRequestMessage(null);
+      try {
+        const token = localStorage.getItem('shollu_token');
+        const res = await axios.get('https://app.shollu.com/api/partners/petugas/event-satgas', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (res.data && res.data.success && Array.isArray(res.data.data)) {
+          const found = res.data.data.find((e: any) => e.id_event === 1);
+          setHasAccess(!!found);
+        } else {
+          setHasAccess(false);
+        }
+      } catch (err) {
+        setHasAccess(false);
+      } finally {
+        setCheckingAccess(false);
+      }
+    };
+    checkAccess();
+  }, []);
+
+  // Request akses Pejuang Quran
+  const handleRequest = async () => {
+    setRequesting(true);
+    setRequestMessage(null);
+    try {
+      const token = localStorage.getItem('shollu_token');
+      await axios.post('https://app.shollu.com/api/partners/petugas/request-pejuang-quran', {}, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setRequestMessage('Request berhasil dikirim. Silakan menunggu di-approve admin.');
+    } catch (err) {
+      setRequestMessage('Gagal mengirim request. Coba lagi nanti.');
+    } finally {
+      setRequesting(false);
+    }
+  };
+
+  // Fetch data jika sudah punya akses
   const fetchData = async (pageNum: number, limitNum: number) => {
     setLoading(true);
     setError(null);
@@ -38,9 +86,32 @@ const KehadiranPejuangQuran: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchData(page, limit);
+    if (hasAccess) {
+      fetchData(page, limit);
+    }
     // eslint-disable-next-line
-  }, [page, limit]);
+  }, [page, limit, hasAccess]);
+
+  if (checkingAccess) {
+    return <div className="max-w-2xl mx-auto mt-8 p-4 bg-white rounded shadow text-center">Cek akses Pejuang Quran...</div>;
+  }
+
+  if (!hasAccess) {
+    return (
+      <div className="max-w-2xl mx-auto mt-8 p-4 bg-white rounded shadow text-center">
+        <h1 className="text-xl font-bold mb-4">Kehadiran Pejuang Quran</h1>
+        <p className="mb-4 text-gray-700">Anda belum terdaftar di event Pejuang Quran.<br/>Jika sudah pernah request silakan menunggu admin, jika belum silakan klik tombol request di bawah ini.</p>
+        {requestMessage && <div className="mb-4 text-green-700 font-semibold">{requestMessage}</div>}
+        <button
+          onClick={handleRequest}
+          disabled={requesting}
+          className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          {requesting ? 'Mengirim request...' : 'Request Akses Pejuang Quran'}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto mt-8 p-4 bg-white rounded shadow">
@@ -60,11 +131,11 @@ const KehadiranPejuangQuran: React.FC = () => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
-              <tr><td colSpan={5} className="text-center py-8">Loading...</td></tr>
+              <tr><td colSpan={7} className="text-center py-8">Loading...</td></tr>
             ) : error ? (
-              <tr><td colSpan={5} className="text-center py-8 text-red-500">{error}</td></tr>
+              <tr><td colSpan={7} className="text-center py-8 text-red-500">{error}</td></tr>
             ) : data.length === 0 ? (
-              <tr><td colSpan={5} className="text-center py-8">Tidak ada data</td></tr>
+              <tr><td colSpan={7} className="text-center py-8">Tidak ada data</td></tr>
             ) : data.map((row: any) => (
               <tr key={row.id} className="hover:bg-gray-50">
                 <td className="px-4 py-2 whitespace-nowrap">{row.peserta_nama}</td>
